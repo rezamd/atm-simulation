@@ -155,13 +155,11 @@ public class Main {
 	}
 
 	public static Account getAuthenticatedUser(String inputedLoginAccountNumber, String currentinputedPin) {
-		List<Account> loadedAccount = accountRepo.findCustomerAccount(inputedLoginAccountNumber, currentinputedPin);
-
-		if (loadedAccount.isEmpty()) {
+		try {
+			return accountRepo.findByIdAndPin(inputedLoginAccountNumber, currentinputedPin);
+		} catch (NoDataFoundException e) {
 			System.out.println("Invalid Account Number/PIN");
 			return null;
-		} else {
-			return loadedAccount.get(0);
 		}
 	}
 

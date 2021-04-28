@@ -23,15 +23,11 @@ public class AccountRepository implements IBaseRepository<Account, String> {
 		accounts.add(firstAccount);
 		accounts.add(secondAccount);
 	}
-
-	public List<Account> findAll() {
-		return this.accounts;
-	}
 	
-	public List<Account> findCustomerAccount(String inputedAccountNumber,
-			String inputedPin) {
-		return this.accounts.stream().filter(account -> account.getAccountNumber().equals(inputedAccountNumber)
-				&& account.getPin().equals(new String(inputedPin))).collect(Collectors.toList());
+	public Account findByIdAndPin(String accountNumber,
+			String pin) throws NoDataFoundException {
+		return this.accounts.stream().filter(account -> account.getAccountNumber().equals(accountNumber)
+				&& account.getPin().equals(new String(pin))).findFirst().orElseThrow(()-> new NoDataFoundException("No Data Found"));
 	}
 
 	@Override
