@@ -222,6 +222,7 @@ public class Main {
 				isDisplayTransactionScreen = !isExit;
 				break;
 			case "3":
+				isDisplayTransactionScreen = false;
 				break;
 			default:
 				break;
