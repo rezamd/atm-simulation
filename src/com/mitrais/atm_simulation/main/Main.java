@@ -6,26 +6,25 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.stream.Collectors;
-
+import com.mitrais.atm_simulation.exception.NoDataFoundException;
 import com.mitrais.atm_simulation.model.Account;
 import com.mitrais.atm_simulation.model.FundTransfer;
-import com.mitrais.atm_simulation.repository.InMemoryAccountRepository;
+import com.mitrais.atm_simulation.repository.AccountRepository;
 
 public class Main {
 	public static Scanner scanner;
-	public static InMemoryAccountRepository accountRepo;
+	public static AccountRepository accountRepo;
 	private static Random random = new Random();
 
 	public static void main(String[] args) {
-		accountRepo = new InMemoryAccountRepository();
+		accountRepo = new AccountRepository();
 		scanner = new Scanner(System.in);
 
 		while (true) {
 			String inputedLoginAccountNumber = showAccountNumberInput();
 			String currentinputedPin = showPinInput();
-			Account loggedInAccount = getAuthenticatedUser(accountRepo.getAccounts(), inputedLoginAccountNumber,
-					currentinputedPin);
+			Account loggedInAccount = getAuthenticatedUser(inputedLoginAccountNumber, currentinputedPin); // TODO throw  exception
+																											
 
 			boolean isLoginSuccess = null != loggedInAccount;
 			if (!isLoginSuccess)
@@ -37,8 +36,6 @@ public class Main {
 
 	public static boolean showWithdrawScreen(Account loggedInAccount) {
 		boolean isBackToWelcomeScreen = false;
-		// TODO: back to transaction when select transaction after summary
-		// TODO: exit to welcome when select exit after any summary
 		boolean isInWithdrawScreen;
 		do {
 			isInWithdrawScreen = true;
@@ -157,9 +154,8 @@ public class Main {
 		return true;
 	}
 
-	public static Account getAuthenticatedUser(List<Account> accounts, String inputedLoginAccountNumber,
-			String currentinputedPin) {
-		List<Account> loadedAccount = findCustomerAccount(accounts, inputedLoginAccountNumber, currentinputedPin);
+	public static Account getAuthenticatedUser(String inputedLoginAccountNumber, String currentinputedPin) {
+		List<Account> loadedAccount = accountRepo.findCustomerAccount(inputedLoginAccountNumber, currentinputedPin);
 
 		if (loadedAccount.isEmpty()) {
 			System.out.println("Invalid Account Number/PIN");
@@ -192,17 +188,6 @@ public class Main {
 		return inputedLoginAccountNumber;
 	}
 
-	public static List<Account> findCustomerAccount(List<Account> accounts, String inputedAccountNumber,
-			String inputedPin) {
-		return accounts.stream().filter(account -> account.getAccountNumber().equals(inputedAccountNumber)
-				&& account.getPin().equals(new String(inputedPin))).collect(Collectors.toList());
-	}
-
-	public static List<Account> findCustomerAccount(List<Account> accounts, String inputedAccountNumber) {
-		return accounts.stream().filter(account -> account.getAccountNumber().equals(inputedAccountNumber))
-				.collect(Collectors.toList());
-	}
-
 	public static void showTransactionScreen(Account loggedInAccount) {
 		boolean isDisplayTransactionScreen = true;
 		do {
@@ -213,7 +198,7 @@ public class Main {
 			switch (selectedTransaction) {
 			case "1":
 				System.out.println("Withdraw");
-				boolean isBackToWelcomeScreen = showWithdrawScreen(loggedInAccount);
+				boolean isBackToWelcomeScreen = showWithdrawScreen(loggedInAccount); //
 				isDisplayTransactionScreen = !isBackToWelcomeScreen;
 				break;
 			case "2":
@@ -242,66 +227,75 @@ public class Main {
 			if (!isNumber(trasferDestinationInput)
 					|| loggedInAccount.getAccountNumber().equals(trasferDestinationInput)) {
 				System.out.println("Invalid account");
-			} else {
-				List<Account> targetAccount = findCustomerAccount(accountRepo.getAccounts(), trasferDestinationInput);
-				if (targetAccount.isEmpty()) {
-					System.out.println("Invalid account");
-				} else {
-					FundTransfer fundTransfer = new FundTransfer();
-					fundTransfer.setSourceAccount(loggedInAccount);
-					fundTransfer.setDestinationaccount(targetAccount.get(0));
-					boolean isAmountValid = showTransferAmountScreen(fundTransfer);
-					if (isAmountValid) {
-						fundTransfer.setReferenceNumber(getRandomNumber(6));
-						System.out.printf("Reference Number: %s press enter to continue \n",
-								fundTransfer.getReferenceNumber());
-						Main.scanner.nextLine();
-						System.out.printf("Transfer Confirmation \nDestination Account : %s \n",
-								fundTransfer.getDestinationaccount().getAccountNumber());
-						System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
-						System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
-						System.out.println("1. Confirm Trx \n2. Cancel Trx \nChoose option[2]: ");
-						String transferOption = Main.scanner.nextLine();
-						switch (transferOption) {
-						case "1":
-							fundTransfer.getSourceAccount().setBalance(
-									fundTransfer.getSourceAccount().getBalance().subtract(fundTransfer.getAmount()));
-							fundTransfer.getDestinationaccount().setBalance(
-									fundTransfer.getDestinationaccount().getBalance().add(fundTransfer.getAmount()));
+				continue;
 
-							System.out.printf("Fund Transfer Summary \nDestination Account : %s \n",
-									fundTransfer.getDestinationaccount().getAccountNumber());
-							System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
-							System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
-							System.out.printf("Balance     : $%s \n", fundTransfer.getSourceAccount().getBalance());
-							System.out.println("1. Transaction \n2. Exit \nChoose option[2]: ");
-							String fundTransferSummaryOption = Main.scanner.nextLine();
-							if(fundTransferSummaryOption.isEmpty()) {
-								isExit = true;
-								break;
-							}
-							switch (fundTransferSummaryOption) {
-							case "1":
-								isDiplayTransferScreen = false;
-								break;
-							case "2":
-								isDiplayTransferScreen = false;
-								isExit = true;
-								break;
-							default:
-								break;
-							}
+			}
+			try {
+				Account targetAccount = accountRepo.findById(trasferDestinationInput);
+
+				FundTransfer fundTransfer = new FundTransfer();
+				fundTransfer.setSourceAccount(loggedInAccount);
+				fundTransfer.setDestinationaccount(targetAccount);
+				boolean isAmountValid = showTransferAmountScreen(fundTransfer);
+				if (isAmountValid) {
+					fundTransfer.setReferenceNumber(getRandomNumber(6));
+					System.out.printf("Reference Number: %s press enter to continue \n",
+							fundTransfer.getReferenceNumber());
+					Main.scanner.nextLine();
+					System.out.printf("Transfer Confirmation \nDestination Account : %s \n",
+							fundTransfer.getDestinationaccount().getAccountNumber());
+					System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
+					System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
+					System.out.println("1. Confirm Trx \n2. Cancel Trx \nChoose option[2]: ");
+					String transferOption = Main.scanner.nextLine();
+					switch (transferOption) {
+					case "1":
+						String fundTransferSummaryOption = transfer(fundTransfer);
+						if (fundTransferSummaryOption.isEmpty()) {
+							isExit = true;
 							break;
-
+						}
+						switch (fundTransferSummaryOption) {
+						case "1":
+							isDiplayTransferScreen = false;
+							break;
+						case "2":
+							isDiplayTransferScreen = false;
+							isExit = true;
+							break;
 						default:
 							break;
 						}
+						break;
 
+					default:
+						break;
 					}
+
 				}
+
+			} catch (NoDataFoundException e) {
+				System.out.println("Invalid account");
+				continue;
 			}
 		} while (isDiplayTransferScreen);
 		return isExit;
+	}
+
+	public static String transfer(FundTransfer fundTransfer) {
+		fundTransfer.getSourceAccount()
+				.setBalance(fundTransfer.getSourceAccount().getBalance().subtract(fundTransfer.getAmount()));
+		fundTransfer.getDestinationaccount()
+				.setBalance(fundTransfer.getDestinationaccount().getBalance().add(fundTransfer.getAmount()));
+
+		System.out.printf("Fund Transfer Summary \nDestination Account : %s \n",
+				fundTransfer.getDestinationaccount().getAccountNumber());
+		System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
+		System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
+		System.out.printf("Balance     : $%s \n", fundTransfer.getSourceAccount().getBalance());
+		System.out.println("1. Transaction \n2. Exit \nChoose option[2]: ");
+		String fundTransferSummaryOption = Main.scanner.nextLine();
+		return fundTransferSummaryOption;
 	}
 
 	public static String getRandomNumber(int digit) {
