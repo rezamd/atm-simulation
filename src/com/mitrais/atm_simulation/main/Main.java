@@ -1,5 +1,6 @@
 package com.mitrais.atm_simulation.main;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -11,6 +12,8 @@ import java.util.stream.Collectors;
 import com.mitrais.atm_simulation.model.Account;
 import com.mitrais.atm_simulation.model.FundTransfer;
 import com.mitrais.atm_simulation.repository.InMemoryAccountRepository;
+import com.mitrais.atm_simulation.utils.NumberUtils;
+import com.mitrais.atm_simulation.utils.StringUtils;
 
 public class Main {
 	public static Scanner scanner;
@@ -20,11 +23,19 @@ public class Main {
 	public static void main(String[] args) {
 		accountRepo = new InMemoryAccountRepository();
 		scanner = new Scanner(System.in);
+		System.out.print("Input File Path : ");
+		String filePath = scanner.nextLine();
+		
+		try {
+			accountRepo.importCsvData(filePath);
+		} catch (IOException e) {
+			System.out.println("Error when importing data");
+		}
 
 		while (true) {
 			String inputedLoginAccountNumber = showAccountNumberInput();
 			String currentinputedPin = showPinInput();
-			Account loggedInAccount = getAuthenticatedUser(accountRepo.getAccounts(), inputedLoginAccountNumber,
+			Account loggedInAccount = getAuthenticatedUser(accountRepo.getAll(), inputedLoginAccountNumber,
 					currentinputedPin);
 
 			boolean isLoginSuccess = null != loggedInAccount;
@@ -37,8 +48,6 @@ public class Main {
 
 	public static boolean showWithdrawScreen(Account loggedInAccount) {
 		boolean isBackToWelcomeScreen = false;
-		// TODO: back to transaction when select transaction after summary
-		// TODO: exit to welcome when select exit after any summary
 		boolean isInWithdrawScreen;
 		do {
 			isInWithdrawScreen = true;
@@ -121,11 +130,11 @@ public class Main {
 				isAmountValid = true;
 				continue;
 			}
-			BigDecimal inputedAmountNumber = isNumber(inputedAmount) ? new BigDecimal(inputedAmount) : BigDecimal.ZERO;
-			if (!isNumber(inputedAmount) || !isMultiplierOf(inputedAmountNumber, multiplier)) {
+			BigDecimal inputedAmountNumber = StringUtils.isNumber(inputedAmount) ? new BigDecimal(inputedAmount) : BigDecimal.ZERO;
+			if (!StringUtils.isNumber(inputedAmount) || !NumberUtils.isMultiplierOf(inputedAmountNumber, multiplier)) {
 				System.out.println("Invalid ammount");
 				isAmountValid = false;
-			} else if (isMoreThan(inputedAmountNumber, maxWithdrawAmount)) {
+			} else if (NumberUtils.isMoreThan(inputedAmountNumber, maxWithdrawAmount)) {
 				System.out.println("Maximum amount to withdraw is $" + maxWithdrawAmount);
 				isAmountValid = false;
 			} else {
@@ -136,21 +145,9 @@ public class Main {
 		return isBalanceSufficient ? new BigDecimal(inputedAmount) : BigDecimal.ZERO;
 	}
 
-	public static boolean isMultiplierOf(BigDecimal inputedAmountNumber, final int multiplier) {
-		return !inputedAmountNumber.equals(BigDecimal.ZERO)
-				&& inputedAmountNumber.remainder(new BigDecimal(multiplier)).compareTo(BigDecimal.ZERO) == 0;
-	}
-
-	public static boolean isMoreThan(BigDecimal inputedAmountNumber, BigDecimal maxWithdrawAmount) {
-		return inputedAmountNumber.compareTo(maxWithdrawAmount) > 0;
-	}
-
-	public static boolean isLessThan(BigDecimal inputedAmountNumber, BigDecimal maxWithdrawAmount) {
-		return inputedAmountNumber.compareTo(maxWithdrawAmount) < 0;
-	}
-
 	private static boolean checkBalanceSufficient(BigDecimal withdrawAmount, BigDecimal balance) {
-		if (balance.compareTo(withdrawAmount) < 0) {
+		
+		if (NumberUtils.isLessThan(balance, withdrawAmount)) {
 			System.out.println("Insufficient balance $" + balance);
 			return false;
 		}
@@ -159,13 +156,14 @@ public class Main {
 
 	public static Account getAuthenticatedUser(List<Account> accounts, String inputedLoginAccountNumber,
 			String currentinputedPin) {
-		List<Account> loadedAccount = findCustomerAccount(accounts, inputedLoginAccountNumber, currentinputedPin);
-
-		if (loadedAccount.isEmpty()) {
+		// List<Account> loadedAccount = findCustomerAccount(accounts,
+		// inputedLoginAccountNumber, currentinputedPin);
+		Account loadedAccount = accountRepo.getById(inputedLoginAccountNumber);
+		if (null == loadedAccount) {
 			System.out.println("Invalid Account Number/PIN");
 			return null;
 		} else {
-			return loadedAccount.get(0);
+			return loadedAccount;
 		}
 	}
 
@@ -176,7 +174,7 @@ public class Main {
 		do {
 			System.out.print("Enter PIN: ");
 			currentinputedPin = Main.scanner.nextLine();
-			isLoginPinValid = validateNumberAndLength(currentinputedPin, "PIN");
+			isLoginPinValid = StringUtils.validateNumberAndLength(currentinputedPin, "PIN");
 		} while (!isLoginPinValid);
 		return currentinputedPin;
 	}
@@ -187,7 +185,7 @@ public class Main {
 		do {
 			System.out.print("Enter Account Number: ");
 			inputedLoginAccountNumber = Main.scanner.nextLine();
-			isLoginAccountNumberValid = validateNumberAndLength(inputedLoginAccountNumber, "Account Number");
+			isLoginAccountNumberValid = StringUtils.validateNumberAndLength(inputedLoginAccountNumber, "Account Number");
 		} while (!isLoginAccountNumberValid);
 		return inputedLoginAccountNumber;
 	}
@@ -222,6 +220,7 @@ public class Main {
 				isDisplayTransactionScreen = !isExit;
 				break;
 			case "3":
+				isDisplayTransactionScreen = false;
 				break;
 			default:
 				break;
@@ -238,11 +237,11 @@ public class Main {
 			String trasferDestinationInput = Main.scanner.nextLine();
 			if (trasferDestinationInput.isEmpty())
 				break;
-			if (!isNumber(trasferDestinationInput)
+			if (!StringUtils.isNumber(trasferDestinationInput)
 					|| loggedInAccount.getAccountNumber().equals(trasferDestinationInput)) {
 				System.out.println("Invalid account");
 			} else {
-				List<Account> targetAccount = findCustomerAccount(accountRepo.getAccounts(), trasferDestinationInput);
+				List<Account> targetAccount = findCustomerAccount(accountRepo.getAll(), trasferDestinationInput);
 				if (targetAccount.isEmpty()) {
 					System.out.println("Invalid account");
 				} else {
@@ -263,6 +262,8 @@ public class Main {
 						String transferOption = Main.scanner.nextLine();
 						switch (transferOption) {
 						case "1":
+							//TODO: use repository to retrieve account, edit and save
+							Account dbSourceAccount= accountRepo.getById(loggedInAccount.getAccountNumber());
 							fundTransfer.getSourceAccount().setBalance(
 									fundTransfer.getSourceAccount().getBalance().subtract(fundTransfer.getAmount()));
 							fundTransfer.getDestinationaccount().setBalance(
@@ -323,20 +324,21 @@ public class Main {
 			BigDecimal inputedAmountNumber;
 			if (inputedAmount.isEmpty())
 				break;
-			if (!isNumber(inputedAmount)) {
+			if (!StringUtils.isNumber(inputedAmount)) {
 				System.out.println("Invalid amount");
 				continue;
 			} else {
 				inputedAmountNumber = new BigDecimal(inputedAmount);
 			}
-			if (isMoreThan(inputedAmountNumber, maxTransferAmount)) {
+			if (NumberUtils.isMoreThan(inputedAmountNumber, maxTransferAmount)) {
 				System.out.printf("Maximum amount to withdraw is $%s\n", maxTransferAmount);
 				continue;
 			}
-			if (isLessThan(inputedAmountNumber, minTransferAmount)) {
+			if (NumberUtils.isLessThan(inputedAmountNumber, minTransferAmount)) {
 				System.out.printf("Minimum amount to withdraw is $%s\n", minTransferAmount);
 				continue;
 			}
+			//TODO: use repository to retrieve account, edit and save
 			if (!checkBalanceSufficient(inputedAmountNumber, fundTransfer.getSourceAccount().getBalance())) {
 				continue;
 			}
@@ -345,22 +347,5 @@ public class Main {
 			fundTransfer.setAmount(inputedAmountNumber);
 		} while (isDisplayTransferAmountScreen);
 		return isAmountValid;
-	}
-
-	public static boolean validateNumberAndLength(String input, String fieldName) {
-		boolean result = true;
-		if (!isNumber(input)) {
-			System.out.println(fieldName + " should only contains numbers");
-			result = false;
-		} else if (!input.matches("^[0-9]{6}$")) {
-			System.out.println(fieldName + " should have 6 digits length");
-			result = false;
-		}
-
-		return result;
-	}
-
-	public static boolean isNumber(String input) {
-		return input.matches("^[0-9]+[0-9]*$");
 	}
 }

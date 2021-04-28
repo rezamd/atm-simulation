@@ -2,12 +2,18 @@ package com.mitrais.atm_simulation.model;
 
 import java.math.BigDecimal;
 
-public class FundTransfer {
+import com.mitrais.atm_simulation.enumerator.TransactionTypeEnum;
+
+public class FundTransfer extends AccountTransaction{
 	private Account sourceAccount;
 	private Account destinationaccount;
 	private BigDecimal amount;
 	private String referenceNumber;
 	
+	public FundTransfer() {
+		super();
+		super.setType(TransactionTypeEnum.FUNDTRANSFER.getCode());
+	}
 	public Account getSourceAccount() {
 		return sourceAccount;
 	}
