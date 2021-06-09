@@ -5,13 +5,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
 import java.util.Scanner;
+
+import com.mitrais.atm_simulation.constant.AtmMachineConstants;
 import com.mitrais.atm_simulation.exception.NoDataFoundException;
 import com.mitrais.atm_simulation.exception.UnauthorizedException;
 import com.mitrais.atm_simulation.model.Account;
 import com.mitrais.atm_simulation.model.FundTransfer;
 import com.mitrais.atm_simulation.repository.AccountRepository;
 import com.mitrais.atm_simulation.service.LoginService;
-
+import com.mitrais.atm_simulation.validator.NumberValidator;
+import static com.mitrais.atm_simulation.constant.AtmMachineConstants.LoginValidationConstant.*;
 public class Main {
 	public static Scanner scanner;
 	private static AccountRepository accountRepo;
@@ -123,11 +126,11 @@ public class Main {
 				isAmountValid = true;
 				continue;
 			}
-			BigDecimal inputedAmountNumber = isNumber(inputedAmount) ? new BigDecimal(inputedAmount) : BigDecimal.ZERO;
-			if (!isNumber(inputedAmount) || !isMultiplierOf(inputedAmountNumber, multiplier)) {
+			BigDecimal inputedAmountNumber = NumberValidator.isNumber(inputedAmount) ? new BigDecimal(inputedAmount) : BigDecimal.ZERO;
+			if (!NumberValidator.isNumber(inputedAmount) || !NumberValidator.isMultiplierOf(inputedAmountNumber, multiplier)) {
 				System.out.println("Invalid ammount");
 				isAmountValid = false;
-			} else if (isMoreThan(inputedAmountNumber, maxWithdrawAmount)) {
+			} else if (NumberValidator.isMoreThan(inputedAmountNumber, maxWithdrawAmount)) {
 				System.out.println("Maximum amount to withdraw is $" + maxWithdrawAmount);
 				isAmountValid = false;
 			} else {
@@ -138,34 +141,12 @@ public class Main {
 		return isBalanceSufficient ? new BigDecimal(inputedAmount) : BigDecimal.ZERO;
 	}
 
-	public static boolean isMultiplierOf(BigDecimal inputedAmountNumber, final int multiplier) {
-		return !inputedAmountNumber.equals(BigDecimal.ZERO)
-				&& inputedAmountNumber.remainder(new BigDecimal(multiplier)).compareTo(BigDecimal.ZERO) == 0;
-	}
-
-	public static boolean isMoreThan(BigDecimal inputedAmountNumber, BigDecimal maxWithdrawAmount) {
-		return inputedAmountNumber.compareTo(maxWithdrawAmount) > 0;
-	}
-
-	public static boolean isLessThan(BigDecimal inputedAmountNumber, BigDecimal maxWithdrawAmount) {
-		return inputedAmountNumber.compareTo(maxWithdrawAmount) < 0;
-	}
-
 	private static boolean checkBalanceSufficient(BigDecimal withdrawAmount, BigDecimal balance) {
 		if (balance.compareTo(withdrawAmount) < 0) {
 			System.out.println("Insufficient balance $" + balance);
 			return false;
 		}
 		return true;
-	}
-
-	public static Account getAuthenticatedUser(String inputedLoginAccountNumber, String currentinputedPin) {
-		try {
-			return accountRepo.findByIdAndPin(inputedLoginAccountNumber, currentinputedPin);
-		} catch (NoDataFoundException e) {
-			System.out.println("Invalid Account Number/PIN");
-			return null;
-		}
 	}
 
 	public static String showPinInput() {
@@ -175,7 +156,7 @@ public class Main {
 		do {
 			System.out.print("Enter PIN: ");
 			currentinputedPin = Main.scanner.nextLine();
-			isLoginPinValid = validateNumberAndLength(currentinputedPin, "PIN");
+			isLoginPinValid = NumberValidator.validateNumberAndLength(currentinputedPin, "PIN", PIN_LENGTH);
 		} while (!isLoginPinValid);
 		return currentinputedPin;
 	}
@@ -186,7 +167,7 @@ public class Main {
 		do {
 			System.out.print("Enter Account Number: ");
 			inputedLoginAccountNumber = Main.scanner.nextLine();
-			isLoginAccountNumberValid = validateNumberAndLength(inputedLoginAccountNumber, "Account Number");
+			isLoginAccountNumberValid = NumberValidator.validateNumberAndLength(inputedLoginAccountNumber, "Account Number", ACCOUNT_NUMBER_LENGTH);
 		} while (!isLoginAccountNumberValid);
 		return inputedLoginAccountNumber;
 	}
@@ -227,7 +208,7 @@ public class Main {
 			String trasferDestinationInput = Main.scanner.nextLine();
 			if (trasferDestinationInput.isEmpty())
 				break;
-			if (!isNumber(trasferDestinationInput)
+			if (!NumberValidator.isNumber(trasferDestinationInput)
 					|| loggedInAccount.getAccountNumber().equals(trasferDestinationInput)) {
 				System.out.println("Invalid account");
 				continue;
@@ -321,17 +302,17 @@ public class Main {
 			BigDecimal inputedAmountNumber;
 			if (inputedAmount.isEmpty())
 				break;
-			if (!isNumber(inputedAmount)) {
+			if (!NumberValidator.isNumber(inputedAmount)) {
 				System.out.println("Invalid amount");
 				continue;
 			} else {
 				inputedAmountNumber = new BigDecimal(inputedAmount);
 			}
-			if (isMoreThan(inputedAmountNumber, maxTransferAmount)) {
+			if (NumberValidator.isMoreThan(inputedAmountNumber, maxTransferAmount)) {
 				System.out.printf("Maximum amount to withdraw is $%s\n", maxTransferAmount);
 				continue;
 			}
-			if (isLessThan(inputedAmountNumber, minTransferAmount)) {
+			if (NumberValidator.isLessThan(inputedAmountNumber, minTransferAmount)) {
 				System.out.printf("Minimum amount to withdraw is $%s\n", minTransferAmount);
 				continue;
 			}
@@ -343,22 +324,5 @@ public class Main {
 			fundTransfer.setAmount(inputedAmountNumber);
 		} while (isDisplayTransferAmountScreen);
 		return isAmountValid;
-	}
-
-	public static boolean validateNumberAndLength(String input, String fieldName) {
-		boolean result = true;
-		if (!isNumber(input)) {
-			System.out.println(fieldName + " should only contains numbers");
-			result = false;
-		} else if (!input.matches("^[0-9]{6}$")) {
-			System.out.println(fieldName + " should have 6 digits length");
-			result = false;
-		}
-
-		return result;
-	}
-
-	public static boolean isNumber(String input) {
-		return input.matches("^[0-9]+[0-9]*$");
 	}
 }
