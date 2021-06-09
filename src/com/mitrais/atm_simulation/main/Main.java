@@ -3,15 +3,18 @@ package com.mitrais.atm_simulation.main;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
-import com.mitrais.atm_simulation.constant.AtmMachineConstants;
+import com.mitrais.atm_simulation.exception.LowBalanceException;
 import com.mitrais.atm_simulation.exception.NoDataFoundException;
 import com.mitrais.atm_simulation.exception.UnauthorizedException;
 import com.mitrais.atm_simulation.model.Account;
 import com.mitrais.atm_simulation.model.FundTransfer;
 import com.mitrais.atm_simulation.repository.AccountRepository;
+import com.mitrais.atm_simulation.service.AccountService;
 import com.mitrais.atm_simulation.service.LoginService;
 import com.mitrais.atm_simulation.validator.NumberValidator;
 import static com.mitrais.atm_simulation.constant.AtmMachineConstants.LoginValidationConstant.*;
@@ -19,18 +22,20 @@ public class Main {
 	public static Scanner scanner;
 	private static AccountRepository accountRepo;
 	private static LoginService loginService;
+	private static AccountService accountService;
 	private static Random random = new Random();
-
+	public static Account loggedInAccount;
+	
 	public static void main(String[] args) {
 		accountRepo = new AccountRepository();
 		loginService = new LoginService(accountRepo);
-		
+		accountService = new AccountService(accountRepo);
 		scanner = new Scanner(System.in);
 
 		while (true) {
 			String inputedLoginAccountNumber = showAccountNumberInput();
 			String currentinputedPin = showPinInput();
-			Account loggedInAccount;
+			
 			try {
 				loggedInAccount = loginService.authenticateUser(inputedLoginAccountNumber, currentinputedPin);
 			} catch (UnauthorizedException e) {
@@ -42,60 +47,45 @@ public class Main {
 		}
 	}
 
-	public static boolean showWithdrawScreen(Account loggedInAccount) {
-		boolean isBackToWelcomeScreen = false;
-		boolean isInWithdrawScreen;
-		do {
-			isInWithdrawScreen = true;
-			System.out.print("1. $10 \n2. $50 \n3. $100 \n4. Other \n5. Back \nPlease choose option[5]:");
-			String selectedAmount = Main.scanner.nextLine();
-			isBackToWelcomeScreen = true;
-			if (selectedAmount.isEmpty()) {
-				isBackToWelcomeScreen = false;
-				break;
-			}
+	public static boolean showWithdrawScreen() {
+		boolean isBackToWelcomeScreen = true;
+		String selectedAccountNunmber = loggedInAccount.getAccountNumber();
+
+		System.out.print("1. $10 \n2. $50 \n3. $100 \n4. Other \n5. Back \nPlease choose option[5]:");
+		String selectedAmount = Main.scanner.nextLine();
+
+		if (selectedAmount.isEmpty()) {
+			return !isBackToWelcomeScreen;
+		}
+		Map<String, BigDecimal> withdrawAmountMap = new HashMap<String, BigDecimal>();
+		withdrawAmountMap.put("1", new BigDecimal(10));
+		withdrawAmountMap.put("2", new BigDecimal(50));
+		withdrawAmountMap.put("3", new BigDecimal(100));
+
+		BigDecimal inputedAmount = withdrawAmountMap.get(selectedAmount);
+		try {
 			switch (selectedAmount) {
 			case "1":
-				isBackToWelcomeScreen = checkAndProcessWithdraw(loggedInAccount, new BigDecimal(10));
-				isInWithdrawScreen = false;
-				break;
 			case "2":
-				isBackToWelcomeScreen = checkAndProcessWithdraw(loggedInAccount, new BigDecimal(50));
-				isInWithdrawScreen = false;
-				break;
 			case "3":
-				isBackToWelcomeScreen = checkAndProcessWithdraw(loggedInAccount, new BigDecimal(100));
-				isInWithdrawScreen = false;
 				break;
 			case "4":
-				BigDecimal inputedAmount = showOtherAmountScreen(loggedInAccount);
-				if (inputedAmount.equals(BigDecimal.ZERO)) {
-					isBackToWelcomeScreen = false;
-				} else {
-					isBackToWelcomeScreen = checkAndProcessWithdraw(loggedInAccount, inputedAmount);
-					isInWithdrawScreen = false;
-				}
+				inputedAmount = showOtherAmountScreen(loggedInAccount);
 				break;
 			case "5":
-				isBackToWelcomeScreen = false;
-				isInWithdrawScreen = false;
-				break;
+				return !isBackToWelcomeScreen;
 			default:
-				isBackToWelcomeScreen = false;
-				break;
+				return showWithdrawScreen();
 			}
-		} while (isInWithdrawScreen);
-		return isBackToWelcomeScreen;
-	}
-
-	public static boolean checkAndProcessWithdraw(Account loggedInAccount, BigDecimal withdrawAmmount) {
-		boolean isBalanceSufficient = checkBalanceSufficient(withdrawAmmount, loggedInAccount.getBalance());
-		boolean isBackToWelcomeScreen = false;
-		if (isBalanceSufficient) {
-			loggedInAccount.setBalance(loggedInAccount.getBalance().subtract(withdrawAmmount));
-			isBackToWelcomeScreen = showWithdrawSummaryScreen(loggedInAccount, withdrawAmmount);
+			loggedInAccount.setBalance(accountService.withdraw(selectedAccountNunmber, inputedAmount).getBalance());
+		} catch (LowBalanceException e) {
+			System.out.println(e.getMessage());
+			return showWithdrawScreen();
+		} catch (NoDataFoundException e) {
+			System.out.println(e.getMessage());
+			return showWithdrawScreen();
 		}
-		return isBackToWelcomeScreen;
+		return showWithdrawSummaryScreen(loggedInAccount, inputedAmount);
 	}
 
 	private static boolean showWithdrawSummaryScreen(Account loggedInAccount, BigDecimal withdrawAmmount) {
@@ -116,29 +106,23 @@ public class Main {
 	private static BigDecimal showOtherAmountScreen(Account account) {
 		final BigDecimal maxWithdrawAmount = new BigDecimal(1000);
 		final int multiplier = 10;
-		boolean isAmountValid;
-		boolean isBalanceSufficient = false;
 		String inputedAmount;
-		do {
-			System.out.print("Other Withdraw \nEnter amount to withdraw: ");
-			inputedAmount = Main.scanner.nextLine();
-			if (inputedAmount.equalsIgnoreCase("")) {
-				isAmountValid = true;
-				continue;
-			}
-			BigDecimal inputedAmountNumber = NumberValidator.isNumber(inputedAmount) ? new BigDecimal(inputedAmount) : BigDecimal.ZERO;
-			if (!NumberValidator.isNumber(inputedAmount) || !NumberValidator.isMultiplierOf(inputedAmountNumber, multiplier)) {
-				System.out.println("Invalid ammount");
-				isAmountValid = false;
-			} else if (NumberValidator.isMoreThan(inputedAmountNumber, maxWithdrawAmount)) {
-				System.out.println("Maximum amount to withdraw is $" + maxWithdrawAmount);
-				isAmountValid = false;
-			} else {
-				isBalanceSufficient = checkBalanceSufficient(inputedAmountNumber, account.getBalance());
-				isAmountValid = isBalanceSufficient;
-			}
-		} while (!isAmountValid);
-		return isBalanceSufficient ? new BigDecimal(inputedAmount) : BigDecimal.ZERO;
+		System.out.print("Other Withdraw \nEnter amount to withdraw: ");
+		inputedAmount = Main.scanner.nextLine();
+		if (inputedAmount.equalsIgnoreCase("")) {
+			return showOtherAmountScreen(account);
+		}
+		BigDecimal inputedAmountNumber = NumberValidator.isNumber(inputedAmount) ? new BigDecimal(inputedAmount)
+				: BigDecimal.ZERO;
+		if (!NumberValidator.isNumber(inputedAmount)
+				|| !NumberValidator.isMultiplierOf(inputedAmountNumber, multiplier)) {
+			System.out.println("Invalid ammount");
+			return showOtherAmountScreen(account);
+		} else if (NumberValidator.isMoreThan(inputedAmountNumber, maxWithdrawAmount)) {
+			System.out.println("Maximum amount to withdraw is $" + maxWithdrawAmount);
+			return showOtherAmountScreen(account);
+		}
+		return inputedAmountNumber;
 	}
 
 	private static boolean checkBalanceSufficient(BigDecimal withdrawAmount, BigDecimal balance) {
@@ -182,7 +166,7 @@ public class Main {
 			switch (selectedTransaction) {
 			case "1":
 				System.out.println("Withdraw");
-				boolean isBackToWelcomeScreen = showWithdrawScreen(loggedInAccount); //
+				boolean isBackToWelcomeScreen = showWithdrawScreen();
 				isDisplayTransactionScreen = !isBackToWelcomeScreen;
 				break;
 			case "2":

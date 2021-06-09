@@ -2,7 +2,7 @@ package com.mitrais.atm_simulation.model;
 
 import java.math.BigDecimal;
 
-public class Account {
+public class Account implements Cloneable{
 	private String fullName;
 	private String pin;
 	private BigDecimal balance;
@@ -34,7 +34,19 @@ public class Account {
 	public void setAccountNumber(String accountNumber) {
 		this.accountNumber = accountNumber;
 	}
-	public String getPin() {
-		return pin;
+	
+	public Boolean isPinMatch(String pin) {
+		return this.pin.equals(pin);
+	}
+	
+	@Override
+	public Account clone() {
+		Account clonedAccount = null;
+		try {
+			clonedAccount = (Account) super.clone();
+		} catch (CloneNotSupportedException e) {
+			clonedAccount = new Account(this.fullName, this.pin, this.balance, this.accountNumber);
+		}
+		return clonedAccount;
 	}
 }

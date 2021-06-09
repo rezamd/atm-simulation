@@ -3,8 +3,6 @@ package com.mitrais.atm_simulation.repository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-
 import com.mitrais.atm_simulation.exception.NoDataFoundException;
 import com.mitrais.atm_simulation.model.Account;
 
@@ -27,12 +25,26 @@ public class AccountRepository implements IBaseRepository<Account, String> {
 	public Account findByIdAndPin(String accountNumber,
 			String pin) throws NoDataFoundException {
 		return this.accounts.stream().filter(account -> account.getAccountNumber().equals(accountNumber)
-				&& account.getPin().equals(new String(pin))).findFirst().orElseThrow(()-> new NoDataFoundException("No Data Found"));
+				&& account.isPinMatch(pin)).findFirst().orElseThrow(()-> new NoDataFoundException()).clone();
 	}
 
 	@Override
 	public Account findById(String accountNumber) throws NoDataFoundException {
 		return this.accounts.stream().filter(account -> account.getAccountNumber().equals(accountNumber))
-				.findFirst().orElseThrow(()-> new NoDataFoundException("No Data Found"));
+				.findFirst().orElseThrow(()-> new NoDataFoundException()).clone();
+	}
+	
+	private Account findByIdForUpdate(String accountNumber) throws NoDataFoundException {
+		return this.accounts.stream().filter(account -> account.getAccountNumber().equals(accountNumber))
+				.findFirst().orElseThrow(()-> new NoDataFoundException());
+	}
+	
+	@Override
+	public Account update(Account account) throws NoDataFoundException {
+		Account toBeUpdatedAccount = findByIdForUpdate(account.getAccountNumber());
+		toBeUpdatedAccount.setBalance(account.getBalance());
+		toBeUpdatedAccount.setFullName(account.getFullName());
+		
+		return toBeUpdatedAccount.clone();
 	}
 }

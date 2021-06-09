@@ -18,7 +18,7 @@ public class NumberValidator {
 	}
 
 	public static boolean isMultiplierOf(BigDecimal inputedAmountNumber, final int multiplier) {
-		return !inputedAmountNumber.equals(BigDecimal.ZERO)
+		return isMoreThan(inputedAmountNumber, BigDecimal.ZERO)
 				&& inputedAmountNumber.remainder(new BigDecimal(multiplier)).compareTo(BigDecimal.ZERO) == 0;
 	}
 

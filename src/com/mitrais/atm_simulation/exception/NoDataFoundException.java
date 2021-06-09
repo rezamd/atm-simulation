@@ -4,7 +4,7 @@ public class NoDataFoundException extends Exception {
 	private static final long serialVersionUID = 8938749508675811328L;
 
 	public NoDataFoundException() {
-		super();
+		super("No Data Found");
 	}
 
 	public NoDataFoundException(String string) {
