@@ -8,43 +8,45 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
+import com.mitrais.atm_simulation.enumerator.ScreenTypeEnum;
 import com.mitrais.atm_simulation.exception.LowBalanceException;
 import com.mitrais.atm_simulation.exception.NoDataFoundException;
-import com.mitrais.atm_simulation.exception.UnauthorizedException;
 import com.mitrais.atm_simulation.model.Account;
 import com.mitrais.atm_simulation.model.FundTransfer;
 import com.mitrais.atm_simulation.repository.AccountRepository;
+import com.mitrais.atm_simulation.screen.Screen;
 import com.mitrais.atm_simulation.service.AccountService;
 import com.mitrais.atm_simulation.service.LoginService;
 import com.mitrais.atm_simulation.validator.NumberValidator;
-import static com.mitrais.atm_simulation.constant.AtmMachineConstants.LoginValidationConstant.*;
 public class Main {
 	public static Scanner scanner;
 	private static AccountRepository accountRepo;
-	private static LoginService loginService;
 	private static AccountService accountService;
 	private static Random random = new Random();
 	public static Account loggedInAccount;
+	private static Screen screen;
 	
 	public static void main(String[] args) {
 		accountRepo = new AccountRepository();
-		loginService = new LoginService(accountRepo);
+		new LoginService(accountRepo);
 		accountService = new AccountService(accountRepo);
 		scanner = new Scanner(System.in);
-
+		screen = Screen.getScreen(ScreenTypeEnum.WELCOME_SCREEN);
 		while (true) {
-			String inputedLoginAccountNumber = showAccountNumberInput();
-			String currentinputedPin = showPinInput();
-			
-			try {
-				loggedInAccount = loginService.authenticateUser(inputedLoginAccountNumber, currentinputedPin);
-			} catch (UnauthorizedException e) {
-				continue;
-			}
-
+			navigateToScreen(ScreenTypeEnum.WELCOME_SCREEN);
 			showTransactionScreen(loggedInAccount);
 
 		}
+	}
+	
+	public static void navigateToScreen(ScreenTypeEnum screenType) {
+		synchronized (Screen.class) {
+				Main.screen = Screen.getScreen(screenType);
+				ScreenTypeEnum nextScreen = screen.displayScreen();
+				if(nextScreen.equals(ScreenTypeEnum.WELCOME_SCREEN))
+					navigateToScreen(nextScreen);			
+		}
+
 	}
 
 	public static boolean showWithdrawScreen() {
@@ -131,29 +133,6 @@ public class Main {
 			return false;
 		}
 		return true;
-	}
-
-	public static String showPinInput() {
-		String currentinputedPin;
-
-		boolean isLoginPinValid;
-		do {
-			System.out.print("Enter PIN: ");
-			currentinputedPin = Main.scanner.nextLine();
-			isLoginPinValid = NumberValidator.validateNumberAndLength(currentinputedPin, "PIN", PIN_LENGTH);
-		} while (!isLoginPinValid);
-		return currentinputedPin;
-	}
-
-	public static String showAccountNumberInput() {
-		boolean isLoginAccountNumberValid;
-		String inputedLoginAccountNumber;
-		do {
-			System.out.print("Enter Account Number: ");
-			inputedLoginAccountNumber = Main.scanner.nextLine();
-			isLoginAccountNumberValid = NumberValidator.validateNumberAndLength(inputedLoginAccountNumber, "Account Number", ACCOUNT_NUMBER_LENGTH);
-		} while (!isLoginAccountNumberValid);
-		return inputedLoginAccountNumber;
 	}
 
 	public static void showTransactionScreen(Account loggedInAccount) {
