@@ -3,32 +3,37 @@ package com.mitrais.atm_simulation.main;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 import com.mitrais.atm_simulation.exception.NoDataFoundException;
+import com.mitrais.atm_simulation.exception.UnauthorizedException;
 import com.mitrais.atm_simulation.model.Account;
 import com.mitrais.atm_simulation.model.FundTransfer;
 import com.mitrais.atm_simulation.repository.AccountRepository;
+import com.mitrais.atm_simulation.service.LoginService;
 
 public class Main {
 	public static Scanner scanner;
-	public static AccountRepository accountRepo;
+	private static AccountRepository accountRepo;
+	private static LoginService loginService;
 	private static Random random = new Random();
 
 	public static void main(String[] args) {
 		accountRepo = new AccountRepository();
+		loginService = new LoginService(accountRepo);
+		
 		scanner = new Scanner(System.in);
 
 		while (true) {
 			String inputedLoginAccountNumber = showAccountNumberInput();
 			String currentinputedPin = showPinInput();
-			Account loggedInAccount = getAuthenticatedUser(inputedLoginAccountNumber, currentinputedPin); // TODO throw  exception
-																											
-
-			boolean isLoginSuccess = null != loggedInAccount;
-			if (!isLoginSuccess)
+			Account loggedInAccount;
+			try {
+				loggedInAccount = loginService.authenticateUser(inputedLoginAccountNumber, currentinputedPin);
+			} catch (UnauthorizedException e) {
 				continue;
+			}
+
 			showTransactionScreen(loggedInAccount);
 
 		}
