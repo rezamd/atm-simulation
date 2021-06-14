@@ -3,6 +3,7 @@ package com.mitrais.atm_simulation.main;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -34,30 +35,41 @@ public class Main {
 		screen = Screen.getScreen(ScreenTypeEnum.WELCOME_SCREEN);
 		while (true) {
 			navigateToScreen(ScreenTypeEnum.WELCOME_SCREEN);
-			showTransactionScreen(loggedInAccount);
-
 		}
 	}
 	
 	public static void navigateToScreen(ScreenTypeEnum screenType) {
 		synchronized (Screen.class) {
-				Main.screen = Screen.getScreen(screenType);
-				ScreenTypeEnum nextScreen = screen.displayScreen();
-				if(nextScreen.equals(ScreenTypeEnum.WELCOME_SCREEN))
-					navigateToScreen(nextScreen);			
+			Main.screen = Screen.getScreen(screenType);
+			ScreenTypeEnum nextScreen = screen.displayScreen();
+			EnumSet<ScreenTypeEnum> migratedScreen = EnumSet.of(ScreenTypeEnum.WELCOME_SCREEN,
+					ScreenTypeEnum.TRANSACTION_MAIN_SCREEN);
+			if (migratedScreen.contains(nextScreen))
+				navigateToScreen(nextScreen);
+			else {
+				switch (nextScreen) {
+				case WITHDRAWAL_MAIN_SCREEN:
+					navigateToScreen(showWithdrawScreen());
+					break;
+				case TRANSFER_FUND_MAIN_SCREEN:
+					showFundTransferScreen(loggedInAccount);
+					break;
+				default:
+					break;
+				}
+			}
 		}
 
 	}
 
-	public static boolean showWithdrawScreen() {
-		boolean isBackToWelcomeScreen = true;
+	public static ScreenTypeEnum showWithdrawScreen() {
 		String selectedAccountNunmber = loggedInAccount.getAccountNumber();
 
 		System.out.print("1. $10 \n2. $50 \n3. $100 \n4. Other \n5. Back \nPlease choose option[5]:");
 		String selectedAmount = Main.scanner.nextLine();
 
 		if (selectedAmount.isEmpty()) {
-			return !isBackToWelcomeScreen;
+			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 		}
 		Map<String, BigDecimal> withdrawAmountMap = new HashMap<String, BigDecimal>();
 		withdrawAmountMap.put("1", new BigDecimal(10));
@@ -75,7 +87,7 @@ public class Main {
 				inputedAmount = showOtherAmountScreen(loggedInAccount);
 				break;
 			case "5":
-				return !isBackToWelcomeScreen;
+				return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 			default:
 				return showWithdrawScreen();
 			}
@@ -90,7 +102,7 @@ public class Main {
 		return showWithdrawSummaryScreen(loggedInAccount, inputedAmount);
 	}
 
-	private static boolean showWithdrawSummaryScreen(Account loggedInAccount, BigDecimal withdrawAmmount) {
+	private static ScreenTypeEnum showWithdrawSummaryScreen(Account loggedInAccount, BigDecimal withdrawAmmount) {
 		LocalDateTime currentDateTime = LocalDateTime.now();
 		System.out.printf(
 				"Summary \nDate : %s \nWithdraw : $%s \nBalance : $%s \n1. Transaction  \n2. Exit Choose option[2]:",
@@ -98,9 +110,9 @@ public class Main {
 				loggedInAccount.getBalance());
 		String selection = Main.scanner.nextLine();
 		if (selection.equalsIgnoreCase("1")) {
-			return false;
+			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 		} else {
-			return true;
+			return ScreenTypeEnum.WELCOME_SCREEN;
 		}
 
 	}
@@ -133,33 +145,6 @@ public class Main {
 			return false;
 		}
 		return true;
-	}
-
-	public static void showTransactionScreen(Account loggedInAccount) {
-		boolean isDisplayTransactionScreen = true;
-		do {
-			System.out.print("1. Withdraw \n2. Fund Transfer \n3. Exit \nPlease choose option[3]: ");
-			String selectedTransaction = Main.scanner.nextLine();
-			if (selectedTransaction.isEmpty())
-				break;
-			switch (selectedTransaction) {
-			case "1":
-				System.out.println("Withdraw");
-				boolean isBackToWelcomeScreen = showWithdrawScreen();
-				isDisplayTransactionScreen = !isBackToWelcomeScreen;
-				break;
-			case "2":
-				System.out.println("Fund Transfer");
-				boolean isExit = showFundTransferScreen(loggedInAccount);
-				isDisplayTransactionScreen = !isExit;
-				break;
-			case "3":
-				isDisplayTransactionScreen = false;
-				break;
-			default:
-				break;
-			}
-		} while (isDisplayTransactionScreen);
 	}
 
 	private static boolean showFundTransferScreen(Account loggedInAccount) {
@@ -229,17 +214,18 @@ public class Main {
 		return isExit;
 	}
 
-	public static String transfer(FundTransfer fundTransfer) {
+	public static String transfer(FundTransfer fundTransfer) throws NoDataFoundException {
 		fundTransfer.getSourceAccount()
 				.setBalance(fundTransfer.getSourceAccount().getBalance().subtract(fundTransfer.getAmount()));
 		fundTransfer.getDestinationaccount()
 				.setBalance(fundTransfer.getDestinationaccount().getBalance().add(fundTransfer.getAmount()));
-
+		loggedInAccount = accountRepo.update(fundTransfer.getSourceAccount());
+		accountRepo.update(fundTransfer.getDestinationaccount());
 		System.out.printf("Fund Transfer Summary \nDestination Account : %s \n",
 				fundTransfer.getDestinationaccount().getAccountNumber());
 		System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
 		System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
-		System.out.printf("Balance     : $%s \n", fundTransfer.getSourceAccount().getBalance());
+		System.out.printf("Balance     : $%s \n", loggedInAccount.getBalance());
 		System.out.println("1. Transaction \n2. Exit \nChoose option[2]: ");
 		String fundTransferSummaryOption = Main.scanner.nextLine();
 		return fundTransferSummaryOption;

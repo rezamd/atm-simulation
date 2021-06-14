@@ -10,6 +10,8 @@ public abstract class Screen {
 	
 	public static Screen getScreen(ScreenTypeEnum screenType) {
 		switch (screenType) {
+		case TRANSACTION_MAIN_SCREEN:
+			return new TransactionMainScreen();
 		case WELCOME_SCREEN:
 		default:
 			return new WelcomeScreen(loginService);
