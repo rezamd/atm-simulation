@@ -1,36 +1,26 @@
 package com.mitrais.atm_simulation.main;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
 import com.mitrais.atm_simulation.enumerator.ScreenTypeEnum;
-import com.mitrais.atm_simulation.exception.LowBalanceException;
 import com.mitrais.atm_simulation.exception.NoDataFoundException;
 import com.mitrais.atm_simulation.model.Account;
 import com.mitrais.atm_simulation.model.FundTransfer;
 import com.mitrais.atm_simulation.repository.AccountRepository;
 import com.mitrais.atm_simulation.screen.Screen;
-import com.mitrais.atm_simulation.service.AccountService;
-import com.mitrais.atm_simulation.service.LoginService;
 import com.mitrais.atm_simulation.validator.NumberValidator;
 public class Main {
 	public static Scanner scanner;
 	private static AccountRepository accountRepo;
-	private static AccountService accountService;
 	private static Random random = new Random();
 	public static Account loggedInAccount;
 	private static Screen screen;
 	
 	public static void main(String[] args) {
 		accountRepo = new AccountRepository();
-		new LoginService(accountRepo);
-		accountService = new AccountService(accountRepo);
 		scanner = new Scanner(System.in);
 		screen = Screen.getScreen(ScreenTypeEnum.WELCOME_SCREEN);
 		while (true) {
@@ -43,14 +33,11 @@ public class Main {
 			Main.screen = Screen.getScreen(screenType);
 			ScreenTypeEnum nextScreen = screen.displayScreen();
 			EnumSet<ScreenTypeEnum> migratedScreen = EnumSet.of(ScreenTypeEnum.WELCOME_SCREEN,
-					ScreenTypeEnum.TRANSACTION_MAIN_SCREEN);
+					ScreenTypeEnum.TRANSACTION_MAIN_SCREEN, ScreenTypeEnum.WITHDRAWAL_MAIN_SCREEN);
 			if (migratedScreen.contains(nextScreen))
 				navigateToScreen(nextScreen);
 			else {
 				switch (nextScreen) {
-				case WITHDRAWAL_MAIN_SCREEN:
-					navigateToScreen(showWithdrawScreen());
-					break;
 				case TRANSFER_FUND_MAIN_SCREEN:
 					showFundTransferScreen(loggedInAccount);
 					break;
@@ -60,83 +47,6 @@ public class Main {
 			}
 		}
 
-	}
-
-	public static ScreenTypeEnum showWithdrawScreen() {
-		String selectedAccountNunmber = loggedInAccount.getAccountNumber();
-
-		System.out.print("1. $10 \n2. $50 \n3. $100 \n4. Other \n5. Back \nPlease choose option[5]:");
-		String selectedAmount = Main.scanner.nextLine();
-
-		if (selectedAmount.isEmpty()) {
-			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
-		}
-		Map<String, BigDecimal> withdrawAmountMap = new HashMap<String, BigDecimal>();
-		withdrawAmountMap.put("1", new BigDecimal(10));
-		withdrawAmountMap.put("2", new BigDecimal(50));
-		withdrawAmountMap.put("3", new BigDecimal(100));
-
-		BigDecimal inputedAmount = withdrawAmountMap.get(selectedAmount);
-		try {
-			switch (selectedAmount) {
-			case "1":
-			case "2":
-			case "3":
-				break;
-			case "4":
-				inputedAmount = showOtherAmountScreen(loggedInAccount);
-				break;
-			case "5":
-				return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
-			default:
-				return showWithdrawScreen();
-			}
-			loggedInAccount.setBalance(accountService.withdraw(selectedAccountNunmber, inputedAmount).getBalance());
-		} catch (LowBalanceException e) {
-			System.out.println(e.getMessage());
-			return showWithdrawScreen();
-		} catch (NoDataFoundException e) {
-			System.out.println(e.getMessage());
-			return showWithdrawScreen();
-		}
-		return showWithdrawSummaryScreen(loggedInAccount, inputedAmount);
-	}
-
-	private static ScreenTypeEnum showWithdrawSummaryScreen(Account loggedInAccount, BigDecimal withdrawAmmount) {
-		LocalDateTime currentDateTime = LocalDateTime.now();
-		System.out.printf(
-				"Summary \nDate : %s \nWithdraw : $%s \nBalance : $%s \n1. Transaction  \n2. Exit Choose option[2]:",
-				currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a")), withdrawAmmount,
-				loggedInAccount.getBalance());
-		String selection = Main.scanner.nextLine();
-		if (selection.equalsIgnoreCase("1")) {
-			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
-		} else {
-			return ScreenTypeEnum.WELCOME_SCREEN;
-		}
-
-	}
-
-	private static BigDecimal showOtherAmountScreen(Account account) {
-		final BigDecimal maxWithdrawAmount = new BigDecimal(1000);
-		final int multiplier = 10;
-		String inputedAmount;
-		System.out.print("Other Withdraw \nEnter amount to withdraw: ");
-		inputedAmount = Main.scanner.nextLine();
-		if (inputedAmount.equalsIgnoreCase("")) {
-			return showOtherAmountScreen(account);
-		}
-		BigDecimal inputedAmountNumber = NumberValidator.isNumber(inputedAmount) ? new BigDecimal(inputedAmount)
-				: BigDecimal.ZERO;
-		if (!NumberValidator.isNumber(inputedAmount)
-				|| !NumberValidator.isMultiplierOf(inputedAmountNumber, multiplier)) {
-			System.out.println("Invalid ammount");
-			return showOtherAmountScreen(account);
-		} else if (NumberValidator.isMoreThan(inputedAmountNumber, maxWithdrawAmount)) {
-			System.out.println("Maximum amount to withdraw is $" + maxWithdrawAmount);
-			return showOtherAmountScreen(account);
-		}
-		return inputedAmountNumber;
 	}
 
 	private static boolean checkBalanceSufficient(BigDecimal withdrawAmount, BigDecimal balance) {
