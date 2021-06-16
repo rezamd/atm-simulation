@@ -1,14 +1,13 @@
 package com.mitrais.atm_simulation.screen;
 
 import com.mitrais.atm_simulation.enumerator.ScreenTypeEnum;
-import com.mitrais.atm_simulation.main.Main;
 
 public class TransactionMainScreen extends Screen{
 
 	@Override
 	public ScreenTypeEnum displayScreen() {
 		System.out.print("1. Withdraw \n2. Fund Transfer \n3. Exit \nPlease choose option[3]: ");
-		String selectedTransaction = Main.scanner.nextLine();
+		String selectedTransaction = Screen.scanner.nextLine();
 		if (selectedTransaction.isEmpty())
 			return displayScreen();
 		switch (selectedTransaction) {

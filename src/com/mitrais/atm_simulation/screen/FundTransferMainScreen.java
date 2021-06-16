@@ -6,7 +6,6 @@ import com.mitrais.atm_simulation.enumerator.ScreenTypeEnum;
 import com.mitrais.atm_simulation.exception.CancelledInputException;
 import com.mitrais.atm_simulation.exception.LowBalanceException;
 import com.mitrais.atm_simulation.exception.NoDataFoundException;
-import com.mitrais.atm_simulation.main.Main;
 import com.mitrais.atm_simulation.model.FundTransfer;
 import com.mitrais.atm_simulation.service.AccountService;
 import com.mitrais.atm_simulation.util.NumberRandomizer;
@@ -25,11 +24,11 @@ public class FundTransferMainScreen extends Screen {
 
 			System.out.println(
 					"Please enter destination account and press enter to continue or  press enter to go back to Transaction:");
-			String trasferDestinationInput = Main.scanner.nextLine();
+			String trasferDestinationInput = Screen.scanner.nextLine();
 			if (trasferDestinationInput.isEmpty())
 				return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 			if (!NumberValidator.isNumber(trasferDestinationInput)
-					|| Main.loggedInAccount.getAccountNumber().equals(trasferDestinationInput)) {
+					|| Screen.loggedInAccount.getAccountNumber().equals(trasferDestinationInput)) {
 				System.out.println("Invalid account");
 				return displayScreen();
 
@@ -37,23 +36,23 @@ public class FundTransferMainScreen extends Screen {
 			FundTransfer fundTransfer = new FundTransfer();
 			try {
 
-				fundTransfer.setSourceAccount(Main.loggedInAccount.getAccountNumber());
+				fundTransfer.setSourceAccount(Screen.loggedInAccount.getAccountNumber());
 				fundTransfer.setDestinationaccount(trasferDestinationInput);
 				boolean isAmountValid = showTransferAmountInput(fundTransfer);
 				if (isAmountValid) {
 					fundTransfer.setReferenceNumber(NumberRandomizer.getRandomNumber(6));
 					System.out.printf("Reference Number: %s press enter to continue \n",
 							fundTransfer.getReferenceNumber());
-					Main.scanner.nextLine();
+					Screen.scanner.nextLine();
 					System.out.printf("Transfer Confirmation \nDestination Account : %s \n",
 							fundTransfer.getDestinationaccount());
 					System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
 					System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
 					System.out.println("1. Confirm Trx \n2. Cancel Trx \nChoose option[2]: ");
-					String transferOption = Main.scanner.nextLine();
+					String transferOption = Screen.scanner.nextLine();
 					switch (transferOption) {
 					case "1":
-						Main.loggedInAccount.setBalance(accountService.fundTransfer(fundTransfer.getSourceAccount(), fundTransfer.getDestinationaccount(), fundTransfer.getAmount()).getBalance());
+						Screen.loggedInAccount.setBalance(accountService.fundTransfer(fundTransfer.getSourceAccount(), fundTransfer.getDestinationaccount(), fundTransfer.getAmount()).getBalance());
 						break;
 					default:
 						return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
@@ -80,7 +79,7 @@ public class FundTransferMainScreen extends Screen {
 
 		System.out.println(
 				"Please enter transfer amount and  \npress enter to continue or  \npress enter to go back to Transaction: ");
-		String inputedAmount = Main.scanner.nextLine();
+		String inputedAmount = Screen.scanner.nextLine();
 		BigDecimal inputedAmountNumber;
 		if (inputedAmount.isEmpty())
 			throw new CancelledInputException();
@@ -108,9 +107,9 @@ public class FundTransferMainScreen extends Screen {
 				fundTransfer.getDestinationaccount());
 		System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
 		System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
-		System.out.printf("Balance     : $%s \n", Main.loggedInAccount.getBalance());
+		System.out.printf("Balance     : $%s \n", Screen.loggedInAccount.getBalance());
 		System.out.println("1. Transaction \n2. Exit \nChoose option[2]: ");
-		String fundTransferSummaryOption = Main.scanner.nextLine();
+		String fundTransferSummaryOption = Screen.scanner.nextLine();
 		if (fundTransferSummaryOption.equalsIgnoreCase("1")) {
 			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 		} else {

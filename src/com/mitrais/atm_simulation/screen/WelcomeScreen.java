@@ -2,7 +2,6 @@ package com.mitrais.atm_simulation.screen;
 
 import com.mitrais.atm_simulation.enumerator.*;
 import com.mitrais.atm_simulation.exception.UnauthorizedException;
-import com.mitrais.atm_simulation.main.Main;
 import com.mitrais.atm_simulation.service.LoginService;
 import com.mitrais.atm_simulation.validator.NumberValidator;
 import static com.mitrais.atm_simulation.constant.AtmMachineConstants.LoginValidationConstant.*;
@@ -20,7 +19,7 @@ public class WelcomeScreen extends Screen {
 		String inputedLoginAccountNumber = showAccountNumberInput();
 		String currentinputedPin = showPinInput();
 		try {
-			Main.loggedInAccount = loginService
+			Screen.loggedInAccount = loginService
 					.authenticateUser(inputedLoginAccountNumber, currentinputedPin);
 			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 		} catch (UnauthorizedException e) {
@@ -32,7 +31,7 @@ public class WelcomeScreen extends Screen {
 	public static String showAccountNumberInput() {
 		String inputedLoginAccountNumber;
 		System.out.print("Enter Account Number: ");
-		inputedLoginAccountNumber = Main.scanner.nextLine();
+		inputedLoginAccountNumber = Screen.scanner.nextLine();
 		boolean isLoginAccountNumberValid = NumberValidator.validateNumberAndLength(inputedLoginAccountNumber,
 				"Account Number", ACCOUNT_NUMBER_LENGTH);
 		if (!isLoginAccountNumberValid)
@@ -43,7 +42,7 @@ public class WelcomeScreen extends Screen {
 	public static String showPinInput() {
 		String currentinputedPin;
 		System.out.print("Enter PIN: ");
-		currentinputedPin = Main.scanner.nextLine();
+		currentinputedPin = Screen.scanner.nextLine();
 		boolean isLoginPinValid = NumberValidator.validateNumberAndLength(currentinputedPin, "PIN", PIN_LENGTH);
 		if (!isLoginPinValid)
 			return showPinInput();

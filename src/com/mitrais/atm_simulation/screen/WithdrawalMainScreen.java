@@ -9,7 +9,6 @@ import java.time.format.DateTimeFormatter;
 import com.mitrais.atm_simulation.enumerator.ScreenTypeEnum;
 import com.mitrais.atm_simulation.exception.LowBalanceException;
 import com.mitrais.atm_simulation.exception.NoDataFoundException;
-import com.mitrais.atm_simulation.main.Main;
 import com.mitrais.atm_simulation.model.Account;
 import com.mitrais.atm_simulation.service.AccountService;
 import com.mitrais.atm_simulation.validator.NumberValidator;
@@ -23,10 +22,10 @@ public class WithdrawalMainScreen extends Screen {
 
 	@Override
 	public ScreenTypeEnum displayScreen() {
-		String selectedAccountNunmber = Main.loggedInAccount.getAccountNumber();
+		String selectedAccountNunmber = Screen.loggedInAccount.getAccountNumber();
 
 		System.out.print("1. $10 \n2. $50 \n3. $100 \n4. Other \n5. Back \nPlease choose option[5]:");
-		String selectedAmount = Main.scanner.nextLine();
+		String selectedAmount = Screen.scanner.nextLine();
 
 		if (selectedAmount.isEmpty()) {
 			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
@@ -48,7 +47,7 @@ public class WithdrawalMainScreen extends Screen {
 			default:
 				return displayScreen();
 			}
-			Main.loggedInAccount.setBalance(accountService.withdraw(selectedAccountNunmber, inputedAmount).getBalance());
+			Screen.loggedInAccount.setBalance(accountService.withdraw(selectedAccountNunmber, inputedAmount).getBalance());
 		} catch (LowBalanceException e) {
 			System.out.println(e.getMessage());
 			return displayScreen();
@@ -56,14 +55,14 @@ public class WithdrawalMainScreen extends Screen {
 			System.out.println(e.getMessage());
 			return displayScreen();
 		}
-		return showWithdrawSummary(Main.loggedInAccount, inputedAmount);
+		return showWithdrawSummary(Screen.loggedInAccount, inputedAmount);
 	}
 
 	private BigDecimal showOtherAmountInput() {
 		final BigDecimal maxWithdrawAmount = new BigDecimal(1000);
 		final int multiplier = 10;
 		System.out.print("Other Withdraw \nEnter amount to withdraw: ");
-		String inputedAmount = Main.scanner.nextLine();
+		String inputedAmount = Screen.scanner.nextLine();
 
 		BigDecimal inputedAmountNumber = NumberValidator.isNumber(inputedAmount) ? new BigDecimal(inputedAmount)
 				: BigDecimal.ZERO;
@@ -75,7 +74,7 @@ public class WithdrawalMainScreen extends Screen {
 			System.out.println("Maximum amount to withdraw is $" + maxWithdrawAmount);
 			return showOtherAmountInput();
 		}
-		return BigDecimal.ZERO;
+		return inputedAmountNumber;
 	}
 	
 	private ScreenTypeEnum showWithdrawSummary(Account loggedInAccount, BigDecimal withdrawAmmount) {
@@ -84,7 +83,7 @@ public class WithdrawalMainScreen extends Screen {
 				"Summary \nDate : %s \nWithdraw : $%s \nBalance : $%s \n1. Transaction  \n2. Exit Choose option[2]:",
 				currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a")), withdrawAmmount,
 				loggedInAccount.getBalance());
-		String selection = Main.scanner.nextLine();
+		String selection = Screen.scanner.nextLine();
 		if (selection.equalsIgnoreCase("1")) {
 			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 		} else {
