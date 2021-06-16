@@ -16,6 +16,8 @@ public abstract class Screen {
 			return new TransactionMainScreen();
 		case WITHDRAWAL_MAIN_SCREEN:
 			return new WithdrawalMainScreen(accountService);
+		case TRANSFER_FUND_MAIN_SCREEN:
+			return new FundTransferMainScreen(accountService);
 		case WELCOME_SCREEN:
 		default:
 			return new WelcomeScreen(loginService);

@@ -27,4 +27,23 @@ public class AccountService {
 		account.setBalance(account.getBalance().subtract(amount));
 		return accountRepository.update(account);
 	}
+	
+	public Account fundTransfer(String sourceAccountNumber, String destinationAccountNumber, BigDecimal amount)
+			throws LowBalanceException, NoDataFoundException {
+		Account sourceAccount = accountRepository.findById(sourceAccountNumber);
+		checkBalanceSufficient(amount, sourceAccount.getBalance());
+		Account destinationAccount = accountRepository.findById(destinationAccountNumber);
+		sourceAccount.setBalance(sourceAccount.getBalance().subtract(amount));
+		destinationAccount.setBalance(destinationAccount.getBalance().add(amount));
+		try {
+			accountRepository.update(sourceAccount);
+			accountRepository.update(destinationAccount);
+		} catch (Exception e) {
+			sourceAccount.setBalance(sourceAccount.getBalance().add(amount));
+			destinationAccount.setBalance(destinationAccount.getBalance().subtract(amount));
+			accountRepository.update(sourceAccount);
+			accountRepository.update(destinationAccount);
+		}
+		return sourceAccount;
+	}
 }

@@ -3,21 +3,21 @@ package com.mitrais.atm_simulation.model;
 import java.math.BigDecimal;
 
 public class FundTransfer {
-	private Account sourceAccount;
-	private Account destinationaccount;
+	private String sourceAccount;
+	private String destinationaccount;
 	private BigDecimal amount;
 	private String referenceNumber;
 	
-	public Account getSourceAccount() {
+	public String getSourceAccount() {
 		return sourceAccount;
 	}
-	public void setSourceAccount(Account sourceAccount) {
+	public void setSourceAccount(String sourceAccount) {
 		this.sourceAccount = sourceAccount;
 	}
-	public Account getDestinationaccount() {
+	public String getDestinationaccount() {
 		return destinationaccount;
 	}
-	public void setDestinationaccount(Account destinationaccount) {
+	public void setDestinationaccount(String destinationaccount) {
 		this.destinationaccount = destinationaccount;
 	}
 	public BigDecimal getAmount() {
