@@ -10,10 +10,10 @@ import com.mitrais.atm_simulation.service.LoginService;
 
 public abstract class Screen {
 	private static AccountRepository accountRepository = new AccountRepository();
-	protected static LoginService loginService = new LoginService(accountRepository);
-	protected static AccountService accountService = new AccountService(accountRepository);
+	private static LoginService loginService = new LoginService(accountRepository);
+	private static AccountService accountService = new AccountService(accountRepository);
 	protected static Account loggedInAccount;
-	public static Scanner scanner = new Scanner(System.in);
+	protected static Scanner scanner = new Scanner(System.in);
 
 	public static Screen getScreen(ScreenTypeEnum screenType) {
 		switch (screenType) {
