@@ -3,7 +3,7 @@ package com.mitrais.atm_simulation.validator;
 import java.math.BigDecimal;
 
 public class NumberValidator {
-
+	private NumberValidator() {}
 	public static boolean validateNumberAndLength(String input, String fieldName, int length) {
 		boolean result = true;
 		if (!NumberValidator.isNumber(input)) {
