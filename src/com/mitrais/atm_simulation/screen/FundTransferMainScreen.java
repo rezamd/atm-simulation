@@ -41,20 +41,18 @@ public class FundTransferMainScreen extends Screen {
 				boolean isAmountValid = showTransferAmountInput(fundTransfer);
 				if (isAmountValid) {
 					fundTransfer.setReferenceNumber(NumberRandomizer.getRandomNumber(6));
-					System.out.printf("Reference Number: %s press enter to continue \n",
+					System.out.printf("Reference Number: %s press enter to continue %n",
 							fundTransfer.getReferenceNumber());
 					Screen.scanner.nextLine();
-					System.out.printf("Transfer Confirmation \nDestination Account : %s \n",
+					System.out.printf("Transfer Confirmation %nDestination Account : %s %n",
 							fundTransfer.getDestinationaccount());
-					System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
-					System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
+					System.out.printf("Transfer Amount     : $%s %n", fundTransfer.getAmount());
+					System.out.printf("Reference Number    : %s %n", fundTransfer.getReferenceNumber());
 					System.out.println("1. Confirm Trx \n2. Cancel Trx \nChoose option[2]: ");
 					String transferOption = Screen.scanner.nextLine();
-					switch (transferOption) {
-					case "1":
+					if("1".equals(transferOption)) {
 						Screen.loggedInAccount.setBalance(accountService.fundTransfer(fundTransfer.getSourceAccount(), fundTransfer.getDestinationaccount(), fundTransfer.getAmount()).getBalance());
-						break;
-					default:
+					}else{
 						return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 					}
 
@@ -90,11 +88,11 @@ public class FundTransferMainScreen extends Screen {
 			inputedAmountNumber = new BigDecimal(inputedAmount);
 		}
 		if (NumberValidator.isMoreThan(inputedAmountNumber, maxTransferAmount)) {
-			System.out.printf("Maximum amount to withdraw is $%s\n", maxTransferAmount);
+			System.out.printf("Maximum amount to withdraw is $%s%n", maxTransferAmount);
 			return showTransferAmountInput(fundTransfer);
 		}
 		if (NumberValidator.isLessThan(inputedAmountNumber, minTransferAmount)) {
-			System.out.printf("Minimum amount to withdraw is $%s\n", minTransferAmount);
+			System.out.printf("Minimum amount to withdraw is $%s%n", minTransferAmount);
 			return showTransferAmountInput(fundTransfer);
 		}
 		isAmountValid = true;
@@ -103,11 +101,11 @@ public class FundTransferMainScreen extends Screen {
 	}
 	
 	public ScreenTypeEnum transferSummary(FundTransfer fundTransfer){
-		System.out.printf("Fund Transfer Summary \nDestination Account : %s \n",
+		System.out.printf("Fund Transfer Summary %nDestination Account : %s %n",
 				fundTransfer.getDestinationaccount());
-		System.out.printf("Transfer Amount     : $%s \n", fundTransfer.getAmount());
-		System.out.printf("Reference Number    : %s \n", fundTransfer.getReferenceNumber());
-		System.out.printf("Balance     : $%s \n", Screen.loggedInAccount.getBalance());
+		System.out.printf("Transfer Amount     : $%s %n", fundTransfer.getAmount());
+		System.out.printf("Reference Number    : %s %n", fundTransfer.getReferenceNumber());
+		System.out.printf("Balance     : $%s %n", Screen.loggedInAccount.getBalance());
 		System.out.println("1. Transaction \n2. Exit \nChoose option[2]: ");
 		String fundTransferSummaryOption = Screen.scanner.nextLine();
 		if (fundTransferSummaryOption.equalsIgnoreCase("1")) {

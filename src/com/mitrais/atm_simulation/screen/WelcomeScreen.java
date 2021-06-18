@@ -4,6 +4,7 @@ import com.mitrais.atm_simulation.enumerator.*;
 import com.mitrais.atm_simulation.exception.UnauthorizedException;
 import com.mitrais.atm_simulation.service.LoginService;
 import com.mitrais.atm_simulation.validator.NumberValidator;
+
 import static com.mitrais.atm_simulation.constant.AtmMachineConstants.LoginValidationConstant.*;
 
 public class WelcomeScreen extends Screen {
@@ -19,8 +20,8 @@ public class WelcomeScreen extends Screen {
 		String inputedLoginAccountNumber = showAccountNumberInput();
 		String currentinputedPin = showPinInput();
 		try {
-			Screen.loggedInAccount = loginService
-					.authenticateUser(inputedLoginAccountNumber, currentinputedPin);
+			Screen.setLoggedInAccount(loginService
+					.authenticateUser(inputedLoginAccountNumber, currentinputedPin));
 			return ScreenTypeEnum.TRANSACTION_MAIN_SCREEN;
 		} catch (UnauthorizedException e) {
 			System.out.println("Invalid Account Number/PIN");

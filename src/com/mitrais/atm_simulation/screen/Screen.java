@@ -33,4 +33,9 @@ public abstract class Screen {
 
 	public abstract ScreenTypeEnum displayScreen();
 
+
+	protected static synchronized  void setLoggedInAccount(Account loggedInAccount) {
+		Screen.loggedInAccount = loggedInAccount;
+	}
+
 }

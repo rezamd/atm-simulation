@@ -1,6 +1,6 @@
 package com.mitrais.atm_simulation.screen;
 
-import static com.mitrais.atm_simulation.constant.AtmMachineConstants.WithDrawalConstant.WITHDRAWAL_AMOUNT_MAP;
+import static com.mitrais.atm_simulation.constant.AtmMachineConstants.WithDrawalConstant.getWithdrawalAmountMap;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,7 +32,7 @@ public class WithdrawalMainScreen extends Screen {
 		}
 
 
-		BigDecimal inputedAmount = WITHDRAWAL_AMOUNT_MAP.get(selectedAmount);
+		BigDecimal inputedAmount = getWithdrawalAmountMap().get(selectedAmount);
 		try {
 			switch (selectedAmount) {
 			case "1":
@@ -48,10 +48,7 @@ public class WithdrawalMainScreen extends Screen {
 				return displayScreen();
 			}
 			Screen.loggedInAccount.setBalance(accountService.withdraw(selectedAccountNunmber, inputedAmount).getBalance());
-		} catch (LowBalanceException e) {
-			System.out.println(e.getMessage());
-			return displayScreen();
-		} catch (NoDataFoundException e) {
+		} catch (LowBalanceException | NoDataFoundException e) {
 			System.out.println(e.getMessage());
 			return displayScreen();
 		}
@@ -80,7 +77,7 @@ public class WithdrawalMainScreen extends Screen {
 	private ScreenTypeEnum showWithdrawSummary(Account loggedInAccount, BigDecimal withdrawAmmount) {
 		LocalDateTime currentDateTime = LocalDateTime.now();
 		System.out.printf(
-				"Summary \nDate : %s \nWithdraw : $%s \nBalance : $%s \n1. Transaction  \n2. Exit Choose option[2]:",
+				"Summary %nDate : %s %nWithdraw : $%s %nBalance : $%s %n1. Transaction  %n2. Exit Choose option[2]:",
 				currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a")), withdrawAmmount,
 				loggedInAccount.getBalance());
 		String selection = Screen.scanner.nextLine();
