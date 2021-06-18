@@ -24,14 +24,14 @@ public class AccountRepository implements IBaseRepository<Account, String> {
 	
 	public Account findByIdAndPin(String accountNumber,
 			String pin) throws NoDataFoundException {
-		return this.accounts.stream().filter(account -> account.getAccountNumber().equals(accountNumber)
-				&& account.isPinMatch(pin)).findFirst().orElseThrow(NoDataFoundException::new).clone();
+		return new Account(this.accounts.stream().filter(account -> account.getAccountNumber().equals(accountNumber)
+				&& account.isPinMatch(pin)).findFirst().orElseThrow(NoDataFoundException::new));
 	}
 
 	@Override
 	public Account findById(String accountNumber) throws NoDataFoundException {
-		return this.accounts.stream().filter(account -> account.getAccountNumber().equals(accountNumber))
-				.findFirst().orElseThrow(NoDataFoundException::new).clone();
+		return new Account(this.accounts.stream().filter(account -> account.getAccountNumber().equals(accountNumber))
+				.findFirst().orElseThrow(NoDataFoundException::new));
 	}
 	
 	private Account findByIdForUpdate(String accountNumber) throws NoDataFoundException {
@@ -45,6 +45,6 @@ public class AccountRepository implements IBaseRepository<Account, String> {
 		toBeUpdatedAccount.setBalance(account.getBalance());
 		toBeUpdatedAccount.setFullName(account.getFullName());
 		
-		return toBeUpdatedAccount.clone();
+		return new Account(toBeUpdatedAccount);
 	}
 }
